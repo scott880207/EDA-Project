@@ -1,7 +1,9 @@
 #include <unordered_map>
 #include <iostream>
+#include <iterator>
 #include <fstream>
 #include <sstream>
+#include <utility>
 #include <vector>
 
 using namespace std;
@@ -16,17 +18,17 @@ class Graph {
 
 public:
     void addEdge(string src, string dest) {
+        int srcIdx = getIndex(src);
+        int destIdx = getIndex(dest);
         edges.push_back({src, dest});
     }
+
     void addVertex(string v) {
-        vertexMap[v] = v;
+        vertexMap[v] = vertexMap.size();
     }
+
     bool isVertexIn(string v) {
-        return vertexMap.find(v) == vertexMap.end();
-    }
-    void test() {
-        int i = 0;
-        for (auto e : edges) cout << e.src << "->" << e.dest << endl;
+        return vertexMap.find(v) != vertexMap.end();
     }
     void createAdjMatrix() {
         // 初始化鄰接矩陣
@@ -36,21 +38,80 @@ public:
         for (auto e : edges) {
             int srcIdx = getIndex(e.src);
             int destIdx = getIndex(e.dest);
+            cout << "srcIdx: " << e.src << srcIdx << " destIdx: " << e.dest << destIdx << endl;
             adjMatrix[srcIdx][destIdx] = 1;
         }
     }
-
+    void printAdjacent(string v) {
+        int idx = getIndex(v);
+        if (idx == -1) {
+            cout << "node "<< v <<" does not exist" << endl;
+            return;
+        }
+        cout << "Predecessors: ";
+        vector<string> predecessors;
+        for (int i = 0; i < adjMatrix.size(); i++) {
+            if (adjMatrix[i][idx] == 1) {
+                predecessors.push_back(getVertex(i));
+            }
+        }
+        if (predecessors.empty()) {
+            cout << "-";
+        } else {
+            copy(predecessors.begin(), predecessors.end() - 1, ostream_iterator<string>(cout, ", "));
+            cout << predecessors.back();
+        }
+        cout << endl;
+        cout << "Successors: ";
+        vector<string> successors;
+        for (int i = 0; i < adjMatrix.size(); i++) {
+            if (adjMatrix[idx][i] == 1) {
+                successors.push_back(getVertex(i));
+            }
+        }
+        if (successors.empty()) {
+            cout << "-";
+        } else {
+            copy(successors.begin(), successors.end() - 1, ostream_iterator<string>(cout, ", "));
+            cout << successors.back();
+        }
+        cout << endl;
+    }
+    void adjacencyQuery() {
+    string input;
+    while (true) {
+        cout << "Please input a node: ";
+        cin >> input;
+        if (input == "0") break;
+        if (!isVertexIn(input)) {
+            cout << "node " << input << " does not exist" << endl;
+        } else {
+            printAdjacent(input);
+        }
+    }
+    }
     int getIndex(string v) {
         auto it = vertexMap.find(v);
-        if (it != vertexMap.end()) {
-            return distance(vertexMap.begin(), it);
+        return it->second;
+    }
+
+    string getVertex(int idx) {
+        for (auto const& [key, value] : vertexMap) {
+            if (value == idx) {
+                return key;
+            }
         }
-        return -1;
+        return "";
+    }
+
+    void test() {
+        for (auto e : edges) cout << e.src << "->" << e.dest << endl;
+        for (auto v : vertexMap) cout << v.first << " index is " << v.second << endl;
     }
 
 private:
     // unordered_map用於存儲頂點
-    unordered_map<string, string> vertexMap;
+    unordered_map<string, int> vertexMap;
     // 儲存邊的陣列
     vector<Edge> edges;
     // 儲存鄰接矩陣
@@ -91,7 +152,7 @@ void readBLIF(string fileName, Graph &g) {
                 }
                 // 將這些點加入g.vertexMap中
                 for (string node : nodes) {
-                    if(g.isVertexIn(node)) {
+                    if(!g.isVertexIn(node)) {
                         g.addVertex(node);
                     }
                 }
@@ -114,6 +175,9 @@ void readBLIF(string fileName, Graph &g) {
 int main() {
     Graph g;
     readBLIF("sample01.blif", g);
+    g.test();
+    g.createAdjMatrix();
+    g.adjacencyQuery();
     return 0;
 }
 
